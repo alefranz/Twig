@@ -127,6 +127,9 @@ class Twig_Extension_Core extends Twig_Extension
             // escaping
             'escape' => new Twig_Filter_Function('twig_escape_filter', array('needs_environment' => true, 'is_safe_callback' => 'twig_escape_filter_is_safe')),
             'e'      => new Twig_Filter_Function('twig_escape_filter', array('needs_environment' => true, 'is_safe_callback' => 'twig_escape_filter_is_safe')),
+            
+            // conversion
+            'datetime' => new Twig_Filter_Function('twig_datetime_filter'),
         );
 
         if (function_exists('mb_get_info')) {
@@ -291,6 +294,41 @@ function twig_random($values)
     $keys = array_keys($values);
 
     return $values[$keys[mt_rand(0, count($values) - 1)]];
+}
+
+/**
+ * Converts a date to a DateTime object and set the correct timezone.
+ *
+ * <pre>
+ *   {{ post.published_at|datetime }}
+ * </pre>
+ *
+ * @param DateTime|string     $date     A date
+ * @param DateTimeZone|string $timezone A timezone
+ *
+ * @return DateTime The DateTime instance of the date
+ */
+function twig_datetime_filter($date, $timezone = null)
+{
+    if (!$date instanceof DateTime) {
+        $asString = (string) $date;
+        if (ctype_digit($asString) || (!empty($asString) && '-' === $asString[0] && ctype_digit(substr($asString, 1)))) {
+            $date = new DateTime('@'.$date);
+            $date->setTimezone(new DateTimeZone(date_default_timezone_get()));
+        } else {
+            $date = new DateTime($date);
+        }
+    }
+
+    if (null !== $timezone) {
+        if (!$timezone instanceof DateTimeZone) {
+            $timezone = new DateTimeZone($timezone);
+        }
+
+        $date->setTimezone($timezone);
+    }
+
+    return $date;
 }
 
 /**
